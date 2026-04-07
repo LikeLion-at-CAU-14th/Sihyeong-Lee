@@ -18,10 +18,10 @@ def index(request):
 
 # 게시글 단일조회(GET), 수정(PATCH), 삭제(DELETE) 로직
 @require_http_methods(["GET","PATCH","DELETE"])
-def post_detail(request, post_id):
+def post_detail(request, post_id): #127.0.0.1:8000/post/(request method)/post_id/
 
-    if request.method == "GET":
-        post = get_object_or_404(Post, pk=post_id)
+    if request.method == "GET": #GET 요청일 때
+        post = get_object_or_404(Post, pk=post_id) #Post 테이블에서 pk=입력한 post_id인 튜플
         post_detail_json = {
             "id" : post.id,
             "title" : post.title,
@@ -37,9 +37,9 @@ def post_detail(request, post_id):
             "data": post_detail_json})
     
     if request.method == "PATCH":
-        body = json.loads(request.body.decode('utf-8'))
+        body = json.loads(request.body.decode('utf-8')) #HTTP 요청의 본문을 utf-8을 통해 문자열로 변환
 
-        post_update = get_object_or_404(Post, pk=post_id)
+        post_update = get_object_or_404(Post, pk=post_id) #Post 테이블에서 pk=입력한 post_id인 튜플
 
         if 'title' in body:
             post_update.title = body['title']
@@ -112,9 +112,18 @@ def post_list(request):
             'data' : new_post_json
         })
 
-# 게시글 전체 조회
+# 게시글 전체 Get(Read)
     if request.method == "GET":
-        post_all = Post.objects.all()
+        category_id = request.GET.get('category_id') #request.Get.get() : GET 요청의 쿼리스트링에서 category_id 값을 가져옵니다. (없으면 None 반환)
+                                                     #()안의 'category_id'는 프론트에서 쿼리스트링으로 넘겨주는 key값입니다. 예시) http://~~/post/?category_id=1 -> category_id = 1
+
+        if category_id:
+            category = get_object_or_404(Category, pk=category_id)
+            post_all = Post.objects.filter(category=category).order_by('-created_at')
+            message = '카테고리별 게시글 목록 조회 성공'
+        else:
+            post_all = Post.objects.all()
+            message = '게시글 목록 조회 성공'
 
         # 각 데이터를 Json 형식으로 변환하여 리스트에 저장 (여러개의 게시글 내용을 담을 거라 리스트를 이용합니다)
         post_all_json = []
@@ -125,25 +134,26 @@ def post_list(request):
                 "title" : post.title,
                 "content" : post.content,
                 "status" : post.status,
-                "writer" : post.writer.username
+                "writer" : post.writer.username,
+                "created_at" : post.created_at
             }
             post_all_json.append(post_json)
 
         return JsonResponse({
             'status' : 200,
-            'message' : '게시글 목록 조회 성공',
+            'message' : message,
             'data' : post_all_json
         })
     
 
-# 댓글을 Get(Read) 하는 뷰 로직
+# 특정 게시글의 댓글을 Get(Read) 하는 뷰 로직
 @require_http_methods(["GET"])   #함수 데코레이터, 특정 http method 만 허용합니다
 def comment_list(request, post_id):
 
 # 댓글 전체 조회
     if request.method == "GET":
         post = get_object_or_404(Post, pk=post_id) # post_id 에 해당하는 Post 데이터 가져오기
-        comment_all = Comment.objects.filter(post=post)
+        comment_all = Comment.objects.filter(post=post) #Comment 테이블에서 post속성이 입력한 post_id인 객체들 가져옴
 
         # 각 데이터를 Json 형식으로 변환하여 리스트에 저장 (여러개의 게시글 내용을 담을 거라 리스트를 이용합니다)
         comment_all_json = []
@@ -160,34 +170,4 @@ def comment_list(request, post_id):
             'status' : 200,
             'message' : '댓글 목록 조회 성공',
             'data' : comment_all_json
-        })
-    
-
-# 카테고리별 게시글을 Get(Read) 하는 뷰 로직
-@require_http_methods(["GET"])   #함수 데코레이터, 특정 http method 만 허용합니다
-def category_list(request, category_id):
-
-# 댓글 전체 조회
-    if request.method == "GET":
-        category = get_object_or_404(Category, pk=category_id) # category_id 에 해당하는 Category 데이터 가져오기
-        category_post_list = Post.objects.filter(category=category).order_by('-created_at')#만들어진 순서대로 정렬
-
-        # 각 데이터를 Json 형식으로 변환하여 리스트에 저장 (여러개의 게시글 내용을 담을 거라 리스트를 이용합니다)
-        category_post_list_json = []
-
-        for post in category_post_list:
-            category_post_detail_json = {
-                "id" : post.id,
-                "title" : post.title,
-                "content" : post.content,
-                "status" : post.status,
-                "writer" : post.writer.username,
-                "created_at" : post.created_at
-            }
-            category_post_list_json.append(category_post_detail_json)
-
-        return JsonResponse({
-            'status' : 200,
-            'message' : '카테고리별 게시글 성공',
-            'data' : category_post_list_json
         })
