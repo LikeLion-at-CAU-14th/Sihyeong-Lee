@@ -13,7 +13,6 @@ class BaseModel(models.Model): # models.Model을 상속받음
 class Category(models.Model):
     id = models.AutoField(primary_key=True)
     name = models.CharField()
-    #post = models.ManyToManyField(Post, related_name='categories') 
 
     def __str__(self):
         return self.name
