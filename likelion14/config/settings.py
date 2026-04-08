@@ -161,3 +161,57 @@ CORS_ALLOWED_ORIGINS = [
     "http://localhost:3000",
     "http://127.0.0.1:3000",
 ]
+
+import logging
+#서버로 들어오는 모든 http 요청 로깅하기
+#로그에 시간, 로그레벨, 요청 url 포함하기
+#warning 이상 에러는 errors.log로 따로 로깅하기
+LOGGING = { 
+    "version": 1, #the dictConfig format version
+    "disable_existing_loggers": False,  # retain the default loggers
+
+    #formatters는 로그 메시지의 형식을 정의하는 부분
+    "formatters": {
+        "verbose": {# 로그 메시지의 형식을 자세하게 정의하는 포맷터
+            "format": "[{asctime}] {levelname} URL: {message}", #asctime: 로그가 기록된 시간, levelname: 로그의 심각도 수준, message: 실제 로그 메시지
+            "style": "{", #로그 메시지에서 중괄호 {}를 사용하여 포맷팅하도록 지정
+        },
+    },
+
+    "handlers": {
+        
+        "console": {
+            "formatter": "verbose", # verbose 포맷터 사용
+            "class": "logging.StreamHandler",
+            "level": "DEBUG", # DEBUG 이상의 로그만 기록
+        },
+        
+        "warning_file": { 
+            "class": "logging.FileHandler",
+            "filename": BASE_DIR / "logs" / "errors.log",   # 로그를 저장할 파일 이름 #logs 폴더는 프로젝트 루트 디렉토리에 생성됨
+            "level": "WARNING", # WARNING 이상의 로그만 기록
+            "formatter": "verbose",
+        },
+
+        "file": {
+            "class": "logging.FileHandler",
+            "filename": BASE_DIR / "logs" / "all.log",   # 로그를 저장할 파일 이름 #logs 폴더는 프로젝트 루트 디렉토리에 생성됨
+            "level": "DEBUG", # DEBUG 이상의 로그만 기록
+            "formatter": "verbose", # verbose 포맷터 사용
+        },
+    },
+
+    "loggers": {
+        "django": { # Django 프레임워크에서 발생하는 로그를 처리하는 로거
+            "handlers": ["console", "warning_file", "file"], # 로그 메시지를 처리할 핸들러 지정
+            "level": "DEBUG", # DEBUG 이상의 로그만 처리
+            "propagate": True, # 상위 로거로 로그 메시지 전파 여부
+        },
+        "django.request": { # Django의 HTTP 요청 처리와 관련된 로그를 처리하는 로거
+            "handlers": ["console", "warning_file", "file"], # 로그 메시지를 처리할 핸들러 지정
+            "level": "DEBUG", # DEBUG 이상의 로그만 처리
+            "propagate": False, # 상위 로거로 로그 메시지 전파 여부
+        },
+    },
+
+}
