@@ -225,18 +225,18 @@ class CommentList(APIView):
         comments = Comment.objects.filter(post=post)
         serializer = CommentSerializer(comments, many=True)
         return Response(serializer.data)
-    
+
     def post(self, request, post_id):
         post = get_object_or_404(Post, id=post_id)
-        serializer = CommentSerializer(data = request.data)
+        serializer = CommentSerializer(data=request.data)
         if serializer.is_valid():
-            serializer.save()
+            serializer.save(post=post) #댓글 생성 시 해당 post_id의 게시글과 연결되도록 post=post 전달
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     
 class CommentDetail(APIView):
     def delete(self, request, post_id, comment_id):
-        post = get_object_or_404(Post, id=post_id)
+        post = get_object_or_404(Post, id=post_id) 
         comment = get_object_or_404(Comment, id=comment_id)
         return Response(
             {
