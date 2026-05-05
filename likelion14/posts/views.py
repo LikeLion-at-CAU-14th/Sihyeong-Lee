@@ -234,10 +234,20 @@ class CommentList(APIView):
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     
-class CommentDetail(APIView):
+class CommentDetail(APIView): 
     def delete(self, request, post_id, comment_id):
         post = get_object_or_404(Post, id=post_id) 
         comment = get_object_or_404(Comment, id=comment_id)
+        if comment.post.id != post.id:
+            return Response(
+                {
+                    "message": "해당 댓글은 이 게시글에 달린 댓글이 아닙니다.",
+                    "post_id": post_id,
+                    "comment_id": comment_id
+                },
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        comment.delete()
         return Response(
             {
                 "message": "댓글이 성공적으로 삭제되었습니다.",
