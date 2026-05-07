@@ -179,9 +179,13 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 from django.http import Http404
+from rest_framework.permissions import IsAuthenticatedOrReadOnly # jwt 세션
+from config.permissions import IsOwnerOrReadOnly, Isdaytime # IsOwnerOrReadOnly 클래스는 config/permissions.py에 정의한 커스텀 권한 클래스입니다. 
+                                            #게시글의 작성자만 수정/삭제할 수 있도록 권한을 설정하기 위해 사용합니다.
 
 
 class PostList(APIView):
+    permission_classes = [Isdaytime] #7시부터 22시까지만 접근 허용하는 Isdaytime 권한 클래스 추가
     def post(self, request, format=None): #create #drf에서 콘텐츠 협상을 위해 사용
         serializer = PostSerializer(data=request.data)
         if serializer.is_valid(): #클라이언트가 보낸 데이터가 유효한지 검사
@@ -195,6 +199,7 @@ class PostList(APIView):
         return Response(serializer.data)
     
 class PostDetail(APIView):
+    permission_classes = [Isdaytime, IsOwnerOrReadOnly] #작성자만 수정/삭제할 수 있고 7시부터 22시까지만 접근 허용하는 권한 클래스 추가
     def get(self, request, post_id): #read 단일 조회(post_id)
         post = get_object_or_404(Post, id=post_id)
         serializer = PostSerializer(post)
@@ -202,6 +207,7 @@ class PostDetail(APIView):
     
     def put(self, request, post_id): #update 전체 업데이트, patch는 일부분 업데이트
         post = get_object_or_404(Post, id=post_id)
+        self.check_object_permissions(request, post) #권한 검사, IsOwnerOrReadOnly 클래스의 has_object_permission() 함수가 호출되어 권한 검사 수행
         serializer = PostSerializer(post, data=request.data)
         if serializer.is_valid(): # update이니까 유효성 검사 필요
             serializer.save()
@@ -210,6 +216,7 @@ class PostDetail(APIView):
     
     def delete(self, request, post_id):
         post = get_object_or_404(Post, id=post_id)
+        self.check_object_permissions(request, post) #권한 검사, IsOwnerOrReadOnly 클래스의 has_object_permission() 함수가 호출되어 권한 검사 수행
         post.delete()
         return Response(
             {
@@ -220,6 +227,7 @@ class PostDetail(APIView):
         )
 
 class CommentList(APIView):
+    permission_classes = [Isdaytime]
     def get(self, request, post_id):
         post = get_object_or_404(Post, id=post_id)
         comments = Comment.objects.filter(post=post)
@@ -235,6 +243,7 @@ class CommentList(APIView):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     
 class CommentDetail(APIView): 
+    permission_classes = [Isdaytime]
     def delete(self, request, post_id, comment_id):
         post = get_object_or_404(Post, id=post_id) 
         comment = get_object_or_404(Comment, id=comment_id)
