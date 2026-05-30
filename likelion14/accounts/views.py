@@ -180,3 +180,92 @@ def google_callback(request):
         res.set_cookie("access-token", access_token, httponly=True)
         res.set_cookie("refresh-token", refresh_token, httponly=True)
         return res
+
+KAKAO_CLIENT_ID = get_secret("KAKAO_CLIENT_ID")
+KAKAO_REDIRECT = get_secret("KAKAO_REDIRECT")
+KAKAO_CALLBACK_URI = get_secret("KAKAO_CALLBACK_URI")
+KAKAO_SECRET = get_secret("KAKAO_SECRET")
+
+#카카오 로그인
+def kakao_login(request):
+    return redirect(f"{KAKAO_REDIRECT}?client_id={KAKAO_CLIENT_ID}&response_type=code&redirect_uri={KAKAO_CALLBACK_URI}")
+
+def kakao_callback(request):
+    code = request.GET.get("code")
+
+    if code is None:
+        return JsonResponse({"error": "Authorization code error."}, status=status.HTTP_400_BAD_REQUEST)
+
+    token_req = requests.post(
+        "https://kauth.kakao.com/oauth/token",
+        data={
+            "client_id": KAKAO_CLIENT_ID,
+            "client_secret": KAKAO_SECRET,
+            "code": code,
+            "grant_type": "authorization_code",
+            "redirect_uri": KAKAO_CALLBACK_URI,
+            
+        },
+        timeout=10,
+    )
+
+    token_req_json = token_req.json()
+    kakao_access_token = token_req_json.get("access_token")
+
+    if token_req.status_code != 200 or kakao_access_token is None:
+        return JsonResponse(
+            {"status": 400, "message": "Failed to get access token", "detail": token_req_json},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
+    user_info_response = requests.get(
+        "https://kapi.kakao.com/v2/user/me",
+        headers={"Authorization": f"Bearer {kakao_access_token}"},
+        timeout=10,
+    )
+
+    if user_info_response.status_code != 200:
+        return JsonResponse(
+            {"status": 400, "message": "Failed to get user info"},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
+    user_info = user_info_response.json()
+    #email = user_info.get("email")  
+    email = user_info.get("kakao_account", {}).get("email") #카카오에서 이메일 동의를 받을 수 없어서 id로 대신 사용
+    username = user_info.get("properties", {}).get("nickname")
+    #username = user_info.get("nickname")
+    # 이메일 없으면 카카오 ID로 대체
+    if not email:
+        email = f"{user_info.get('id')}@kakao.com"
+    data = {
+        "username": username,
+        "email": email,
+    }
+
+    serializer = OAuthSerializer(data=data)
+    if not serializer.is_valid():
+        print("❌ Serializer errors:", serializer.errors)  # 터미널에서 확인
+        return JsonResponse(serializer.errors, status=400)
+    if serializer.is_valid(raise_exception=True):
+        user = serializer.validated_data["user"]
+        access_token = serializer.validated_data["access_token"]
+        refresh_token = serializer.validated_data["refresh_token"]
+
+        res = JsonResponse(
+            {
+                "user": {
+                    "id": user.id,
+                    "email": user.email,
+                },
+                "message": "login success",
+                "token": {
+                    "access_token": access_token,
+                    "refresh_token": refresh_token,
+                },
+            },
+            status=status.HTTP_200_OK,
+        )
+        res.set_cookie("access-token", access_token, httponly=True)
+        res.set_cookie("refresh-token", refresh_token, httponly=True)
+        return res

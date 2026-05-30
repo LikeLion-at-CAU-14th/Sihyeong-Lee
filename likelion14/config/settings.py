@@ -66,6 +66,7 @@ THIRD_PARTY_APPS = [
     "allauth.account",
     "allauth.socialaccount",
     "allauth.socialaccount.providers.google",  
+    'allauth.socialaccount.providers.kakao',
     # "allauth.socialaccount.providers.{제공_업체}" 찾아서 사용 가능
 
 ]
