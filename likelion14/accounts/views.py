@@ -231,11 +231,9 @@ def kakao_callback(request):
         )
 
     user_info = user_info_response.json()
-    #email = user_info.get("email")  
     email = user_info.get("kakao_account", {}).get("email") #카카오에서 이메일 동의를 받을 수 없어서 id로 대신 사용
     username = user_info.get("properties", {}).get("nickname")
-    #username = user_info.get("nickname")
-    # 이메일 없으면 카카오 ID로 대체
+    
     if not email:
         email = f"{user_info.get('id')}@kakao.com"
     data = {
@@ -244,9 +242,7 @@ def kakao_callback(request):
     }
 
     serializer = OAuthSerializer(data=data)
-    if not serializer.is_valid():
-        print("❌ Serializer errors:", serializer.errors)  # 터미널에서 확인
-        return JsonResponse(serializer.errors, status=400)
+    
     if serializer.is_valid(raise_exception=True):
         user = serializer.validated_data["user"]
         access_token = serializer.validated_data["access_token"]
