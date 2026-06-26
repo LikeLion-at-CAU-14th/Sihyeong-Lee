@@ -283,7 +283,7 @@ class CommentDetail(APIView):
 from django.core.files.storage import default_storage  
 from .serializers import ImageSerializer
 from django.conf import settings
-import boto3
+import boto3, uuid
 class ImageUploadView(APIView):
     def post(self, request):
         if 'image' not in request.FILES:
@@ -298,8 +298,10 @@ class ImageUploadView(APIView):
             region_name=settings.AWS_REGION
         )
 
-        # S3에 파일 저장
-        file_path = f"uploads/{image_file.name}"
+        # S3에 파일 저장 (중복해서 업로드하도록 UUID 추가)
+        # uuid: Universally Unique Identifier, 범용 고유 식별자
+        unique_filename = f"{uuid.uuid4()}_{image_file.name}"
+        file_path = f"uploads/{unique_filename}"
         # S3에 파일 업로드
         try:
             s3_client.put_object(
