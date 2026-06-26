@@ -5,10 +5,18 @@ from rest_framework.response import Response
 from .serializers import *
 from rest_framework import status
 from config.permissions import Isdaytime
+from drf_yasg.utils import swagger_auto_schema
+from drf_yasg import openapi
 
 # Create your views here.
 class RegisterView(APIView):
     permission_classes = [Isdaytime]
+    @swagger_auto_schema(
+        operation_summary="회원가입",
+        operation_description="회원가입을 진행하고, 성공 시 access token과 refresh token을 발급합니다.",
+        request_body=RegisterSerializer,
+        responses={201: RegisterSerializer, 400: "잘못된 요청"}
+    )
     def post(self, request):
         serializer = RegisterSerializer(data=request.data)
 
@@ -39,6 +47,12 @@ class RegisterView(APIView):
 # 로그인 담당 view
 class AuthView(APIView):
     permission_classes = [Isdaytime]
+    @swagger_auto_schema(
+        operation_summary="로그인",
+        operation_description="사용자 로그인을 진행하고, 성공 시 access token과 refresh token을 발급합니다.",
+        request_body=AuthSerializer,
+        responses={200: AuthSerializer, 400: "잘못된 요청"}
+    )
     def post(self, request):
         serializer = AuthSerializer(data=request.data)
         
@@ -82,6 +96,11 @@ class LogoutView(APIView):
     permission_classes = [Isdaytime]
     permission_classes = [IsAuthenticated] # 너 로그인한 사용자 맞아? 를 검사하는 permission
 
+    @swagger_auto_schema(
+        operation_summary="로그아웃",
+        operation_description="사용자 로그아웃을 진행합니다.",
+        responses={200: "로그아웃 성공"}
+    )
     def post(self, request):
         logout(request)
         return Response({"message": "logout success!"}, status=status.HTTP_200_OK)

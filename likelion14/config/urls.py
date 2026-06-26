@@ -37,7 +37,7 @@ schema_view = get_schema_view(
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('posts/', include('posts.urls')), #http://127.0.0.1:8000/posts/ url은 post관련 view에 해당!! #rest위해 복수형으로
-    path('categories/', include('posts.urls')), #categories로 접속, posts, categories 둘 다 posts.urls로 접속해서 중첩생김
+    #path('categories/', include('posts.urls')), #categories로 접속, posts, categories 둘 다 posts.urls로 접속해서 중첩생김
     path('account/', include('accounts.urls')), # acount/ url은 account관련 view에 해당!!
     #Swagger UI
     path('swagger/', schema_view.with_ui('swagger', cache_timeout=0), name='schema-swagger-ui'),
