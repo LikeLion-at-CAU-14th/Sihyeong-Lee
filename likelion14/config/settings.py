@@ -68,6 +68,8 @@ THIRD_PARTY_APPS = [
     "allauth.socialaccount.providers.google",  
     'allauth.socialaccount.providers.kakao',
     # "allauth.socialaccount.providers.{제공_업체}" 찾아서 사용 가능
+    'storages',
+    'drf_yasg', # Swagger UI를 위한 drf_yasg 패키지 추가
 
 ]
 
@@ -115,8 +117,12 @@ WSGI_APPLICATION = 'config.wsgi.application'
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+        'ENGINE': 'django.db.backends.mysql',
+		'NAME': 'likelion14th', # likelion14th
+		'USER': get_secret("DB_USER"), 
+		'PASSWORD': get_secret("DB_PW"), 
+		'HOST': get_secret("DB_HOST"),
+		'PORT': get_secret("DB_PORT"),
     }
 }
 
@@ -252,3 +258,29 @@ SIMPLE_JWT = { # JWT 세부내용 설정
 
 ACCOUNT_LOGIN_METHODS = {'email'}                  # 로그인 방식 설정
 ACCOUNT_SIGNUP_FIELDS = ['email*', 'username*']    # 회원가입 시 필수 입력 필드 설정
+
+### AWS ###
+# IAM 사용자 관련 정보
+# accessKeys.csv 파일에 있는 내용을 입력 해주세요
+AWS_ACCESS_KEY_ID = get_secret("AWS_ACCESS_KEY_ID")
+AWS_SECRET_ACCESS_KEY = get_secret("AWS_SECRET_ACCESS_KEY")
+AWS_REGION = "ap-northeast-2" # 서울 리전
+
+### S3 ###
+AWS_STORAGE_BUCKET_NAME = "likelion14th-s3-sibro"
+AWS_S3_CUSTOM_DOMAIN = f"{AWS_STORAGE_BUCKET_NAME}.s3.{AWS_REGION}.amazonaws.com"
+AWS_S3_OBJECT_PARAMETERS = {
+    'CacheControl': 'max-age=86400',
+}
+
+# drf-yasg (Swagger) 설정: Swagger UI에서 Bearer 토큰으로 인증 가능하도록 함
+SWAGGER_SETTINGS = {
+    'SECURITY_DEFINITIONS': {
+        'Bearer': {
+            'type': 'apiKey',
+            'name': 'Authorization',
+            'in': 'header'
+        }
+    },
+    'USE_SESSION_AUTH': False,
+}

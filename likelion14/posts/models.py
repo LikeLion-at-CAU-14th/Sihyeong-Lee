@@ -12,7 +12,7 @@ class BaseModel(models.Model): # models.Model을 상속받음
 
 class Category(models.Model):
     id = models.AutoField(primary_key=True)
-    name = models.CharField()
+    name = models.CharField(max_length=100, unique=True) # 카테고리 이름은 중복 불가
 
     def __str__(self):
         return self.name
@@ -47,3 +47,10 @@ class Comment(BaseModel): # BaseModel을 상속받음 -> 작성 시간, 수정 �
     def __str__(self):
         return f"{self.post.title}의 댓글: {self.content}"
     #post를 참조하면서 게시글이 삭제되면 댓글도 삭제 + 다대일 참조로 여러 댓글 가능
+
+class Image(BaseModel):
+    id = models.AutoField(primary_key=True)
+    image_url = models.URLField(max_length=500)  # S3에 업로드된 이미지의 URL 저장
+
+    def __str__(self):
+        return f"Image {self.id}"
