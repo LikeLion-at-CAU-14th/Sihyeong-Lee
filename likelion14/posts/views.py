@@ -326,9 +326,7 @@ class CommentDetail(APIView):
             },
             status=status.HTTP_200_OK
         )
-    
 
-    
 
 class ImageUploadView(APIView):
     parser_classes = (MultiPartParser, FormParser)
@@ -377,3 +375,20 @@ class ImageUploadView(APIView):
 
 
         return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+# #django-storages를 사용하여 S3에 이미지 업로드
+# class ImageUploadView(APIView):
+#     parser_classes = (MultiPartParser, FormParser)
+#     @swagger_auto_schema(
+#         operation_summary="django-storages 이미지 업로드",
+#         operation_description="이미지를 업로드하고 S3에 저장합니다.",
+#         manual_parameters=[
+#             openapi.Parameter('image', openapi.IN_FORM, type=openapi.TYPE_FILE, required=True, description="업로드할 이미지 파일")
+#         ],
+#         responses={201: ImageSerializer, 400: "이미지 파일이 없습니다."}
+#     )
+#     def post(self, request):
+#         image_instance = Image.objects.create(image=request.FILES['image'])
+#         # 끝. boto3, s3_client 코드 전혀 필요 없음
+#         serializer = ImageSerializer(image_instance)
+#         return Response(serializer.data, status=201)

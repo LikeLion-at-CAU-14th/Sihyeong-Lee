@@ -49,8 +49,12 @@ class Comment(BaseModel): # BaseModel을 상속받음 -> 작성 시간, 수정 �
     #post를 참조하면서 게시글이 삭제되면 댓글도 삭제 + 다대일 참조로 여러 댓글 가능
 
 class Image(BaseModel):
-    id = models.AutoField(primary_key=True)
-    image_url = models.URLField(max_length=500)  # S3에 업로드된 이미지의 URL 저장
+   id = models.AutoField(primary_key=True)
+   image_url = models.URLField(max_length=500)  # S3에 업로드된 이미지의 URL 저장
 
-    def __str__(self):
-        return f"Image {self.id}"
+   def __str__(self):
+       return f"Image {self.id}"
+
+# #django-storages를 사용하여 S3에 이미지 업로드
+# class Image(BaseModel):
+#     image = models.ImageField(upload_to="uploads/")  # 자동으로 S3에 저장됨

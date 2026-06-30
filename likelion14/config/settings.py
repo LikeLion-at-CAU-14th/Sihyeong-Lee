@@ -273,6 +273,16 @@ AWS_S3_OBJECT_PARAMETERS = {
     'CacheControl': 'max-age=86400',
 }
 
+# #django-storages를 사용하여 S3에 이미지 업로드
+# STORAGES = {
+#     "default": {
+#         'BACKEND': 'storages.backends.s3.S3Storage',
+#     },
+#     "staticfiles": {
+#         'BACKEND': 'django.contrib.staticfiles.storage.StaticFilesStorage',
+#     },
+# }
+
 # drf-yasg (Swagger) 설정: Swagger UI에서 Bearer 토큰으로 인증 가능하도록 함
 SWAGGER_SETTINGS = {
     'SECURITY_DEFINITIONS': {
