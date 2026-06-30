@@ -7,6 +7,13 @@ from rest_framework import status
 from config.permissions import Isdaytime
 from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
+from rest_framework.permissions import IsAuthenticated
+from django.contrib.auth import logout
+from config.settings import get_secret
+from django.shortcuts import redirect
+from json import JSONDecodeError
+from django.http import JsonResponse
+import requests 
 
 # Create your views here.
 class RegisterView(APIView):
@@ -89,8 +96,7 @@ class AuthView(APIView):
         else:
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
         
-from rest_framework.permissions import IsAuthenticated
-from django.contrib.auth import logout
+
 
 class LogoutView(APIView):
     permission_classes = [Isdaytime]
@@ -106,7 +112,7 @@ class LogoutView(APIView):
         return Response({"message": "logout success!"}, status=status.HTTP_200_OK)
     
 
-from config.settings import get_secret
+
 
 # 구글 소셜로그인
 GOOGLE_REDIRECT = get_secret("GOOGLE_REDIRECT")
@@ -115,10 +121,7 @@ GOOGLE_CLIENT_ID = get_secret("GOOGLE_CLIENT_ID")
 GOOGLE_SECRET = get_secret("GOOGLE_SECRET")
 GOOGLE_SCOPE = get_secret("GOOGLE_SCOPE")
 
-from django.shortcuts import redirect
-from json import JSONDecodeError
-from django.http import JsonResponse
-import requests 
+
 
 def google_login(request): # 구글 로그인 페이지로 리다이렉트
     return redirect(f"{GOOGLE_REDIRECT}?client_id={GOOGLE_CLIENT_ID}&response_type=code&redirect_uri={GOOGLE_CALLBACK_URI}&scope={GOOGLE_SCOPE}")

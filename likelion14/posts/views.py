@@ -7,7 +7,19 @@ import json
 from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
 from rest_framework.parsers import MultiPartParser, FormParser
+from .serializers import PostSerializer, CommentSerializer
 
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from rest_framework import status
+from django.http import Http404
+from rest_framework.permissions import IsAuthenticatedOrReadOnly # jwt 세션
+from config.permissions import IsOwnerOrReadOnly, Isdaytime # IsOwnerOrReadOnly 클래스는 config/permissions.py에 정의한 커스텀 권한 클래스입니다. 
+                                            #게시글의 작성자만 수정/삭제할 수 있도록 권한을 설정하기 위해 사용합니다.
+from django.core.files.storage import default_storage  
+from .serializers import ImageSerializer
+from django.conf import settings
+import boto3, uuid
 # Create your views here.
 
 def hello_world(request):
@@ -176,15 +188,7 @@ def index(request):
 #             'data' : comment_all_json
 #         })
 
-from .serializers import PostSerializer, CommentSerializer
 
-from rest_framework.views import APIView
-from rest_framework.response import Response
-from rest_framework import status
-from django.http import Http404
-from rest_framework.permissions import IsAuthenticatedOrReadOnly # jwt 세션
-from config.permissions import IsOwnerOrReadOnly, Isdaytime # IsOwnerOrReadOnly 클래스는 config/permissions.py에 정의한 커스텀 권한 클래스입니다. 
-                                            #게시글의 작성자만 수정/삭제할 수 있도록 권한을 설정하기 위해 사용합니다.
 
 
 class PostList(APIView):
@@ -325,10 +329,7 @@ class CommentDetail(APIView):
     
 
     
-from django.core.files.storage import default_storage  
-from .serializers import ImageSerializer
-from django.conf import settings
-import boto3, uuid
+
 class ImageUploadView(APIView):
     parser_classes = (MultiPartParser, FormParser)
     @swagger_auto_schema(
