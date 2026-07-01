@@ -5,10 +5,25 @@ from rest_framework.response import Response
 from .serializers import *
 from rest_framework import status
 from config.permissions import Isdaytime
+from drf_yasg.utils import swagger_auto_schema
+from drf_yasg import openapi
+from rest_framework.permissions import IsAuthenticated
+from django.contrib.auth import logout
+from config.settings import get_secret
+from django.shortcuts import redirect
+from json import JSONDecodeError
+from django.http import JsonResponse
+import requests 
 
 # Create your views here.
 class RegisterView(APIView):
     permission_classes = [Isdaytime]
+    @swagger_auto_schema(
+        operation_summary="회원가입",
+        operation_description="회원가입을 진행하고, 성공 시 access token과 refresh token을 발급합니다.",
+        request_body=RegisterSerializer,
+        responses={201: RegisterSerializer, 400: "잘못된 요청"}
+    )
     def post(self, request):
         serializer = RegisterSerializer(data=request.data)
 
@@ -39,6 +54,12 @@ class RegisterView(APIView):
 # 로그인 담당 view
 class AuthView(APIView):
     permission_classes = [Isdaytime]
+    @swagger_auto_schema(
+        operation_summary="로그인",
+        operation_description="사용자 로그인을 진행하고, 성공 시 access token과 refresh token을 발급합니다.",
+        request_body=AuthSerializer,
+        responses={200: AuthSerializer, 400: "잘못된 요청"}
+    )
     def post(self, request):
         serializer = AuthSerializer(data=request.data)
         
@@ -75,19 +96,23 @@ class AuthView(APIView):
         else:
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
         
-from rest_framework.permissions import IsAuthenticated
-from django.contrib.auth import logout
+
 
 class LogoutView(APIView):
     permission_classes = [Isdaytime]
     permission_classes = [IsAuthenticated] # 너 로그인한 사용자 맞아? 를 검사하는 permission
 
+    @swagger_auto_schema(
+        operation_summary="로그아웃",
+        operation_description="사용자 로그아웃을 진행합니다.",
+        responses={200: "로그아웃 성공"}
+    )
     def post(self, request):
         logout(request)
         return Response({"message": "logout success!"}, status=status.HTTP_200_OK)
     
 
-from config.settings import get_secret
+
 
 # 구글 소셜로그인
 GOOGLE_REDIRECT = get_secret("GOOGLE_REDIRECT")
@@ -96,10 +121,7 @@ GOOGLE_CLIENT_ID = get_secret("GOOGLE_CLIENT_ID")
 GOOGLE_SECRET = get_secret("GOOGLE_SECRET")
 GOOGLE_SCOPE = get_secret("GOOGLE_SCOPE")
 
-from django.shortcuts import redirect
-from json import JSONDecodeError
-from django.http import JsonResponse
-import requests 
+
 
 def google_login(request): # 구글 로그인 페이지로 리다이렉트
     return redirect(f"{GOOGLE_REDIRECT}?client_id={GOOGLE_CLIENT_ID}&response_type=code&redirect_uri={GOOGLE_CALLBACK_URI}&scope={GOOGLE_SCOPE}")

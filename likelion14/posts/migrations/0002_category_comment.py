@@ -15,7 +15,7 @@ class Migration(migrations.Migration):
             name='Category',
             fields=[
                 ('id', models.AutoField(primary_key=True, serialize=False)),
-                ('name', models.CharField()),
+                ('name', models.CharField(max_length=100, unique=True)),
                 ('post', models.ManyToManyField(to='posts.post')),
             ],
         ),

@@ -4,7 +4,22 @@ from django.shortcuts import get_object_or_404 # 추가
 from django.views.decorators.http import require_http_methods
 from .models import *
 import json
+from drf_yasg.utils import swagger_auto_schema
+from drf_yasg import openapi
+from rest_framework.parsers import MultiPartParser, FormParser
+from .serializers import PostSerializer, CommentSerializer
 
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from rest_framework import status
+from django.http import Http404
+from rest_framework.permissions import IsAuthenticatedOrReadOnly # jwt 세션
+from config.permissions import IsOwnerOrReadOnly, Isdaytime # IsOwnerOrReadOnly 클래스는 config/permissions.py에 정의한 커스텀 권한 클래스입니다. 
+                                            #게시글의 작성자만 수정/삭제할 수 있도록 권한을 설정하기 위해 사용합니다.
+from django.core.files.storage import default_storage  
+from .serializers import ImageSerializer
+from django.conf import settings
+import boto3, uuid
 # Create your views here.
 
 def hello_world(request):
@@ -173,19 +188,17 @@ def index(request):
 #             'data' : comment_all_json
 #         })
 
-from .serializers import PostSerializer, CommentSerializer
 
-from rest_framework.views import APIView
-from rest_framework.response import Response
-from rest_framework import status
-from django.http import Http404
-from rest_framework.permissions import IsAuthenticatedOrReadOnly # jwt 세션
-from config.permissions import IsOwnerOrReadOnly, Isdaytime # IsOwnerOrReadOnly 클래스는 config/permissions.py에 정의한 커스텀 권한 클래스입니다. 
-                                            #게시글의 작성자만 수정/삭제할 수 있도록 권한을 설정하기 위해 사용합니다.
 
 
 class PostList(APIView):
     permission_classes = [Isdaytime] #7시부터 22시까지만 접근 허용하는 Isdaytime 권한 클래스 추가
+    @swagger_auto_schema(
+            operation_summary="게시글 생성",
+            operation_description="새로운 게시글을 생성합니다.",
+            request_body=PostSerializer,  # 요청 데이터의 스키마 정의
+            responses={201: PostSerializer, 400: "잘못된 요청"},  # 응답 데이터의 스키마 정의
+    )
     def post(self, request, format=None): #create #drf에서 콘텐츠 협상을 위해 사용
         serializer = PostSerializer(data=request.data)
         if serializer.is_valid(): #클라이언트가 보낸 데이터가 유효한지 검사
@@ -193,6 +206,11 @@ class PostList(APIView):
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     
+    @swagger_auto_schema(
+        operation_summary="게시글 목록 조회",
+        operation_description="모든 게시글을 조회합니다.",
+        responses={200: PostSerializer(many=True)}
+    )
     def get(self, request, format=None): #read 전체 조회
         posts = Post.objects.all()
         serializer = PostSerializer(posts, many=True) #many=True: 모든 게시글을 한번에 가져옴
@@ -200,11 +218,21 @@ class PostList(APIView):
     
 class PostDetail(APIView):
     permission_classes = [Isdaytime, IsOwnerOrReadOnly] #작성자만 수정/삭제할 수 있고 7시부터 22시까지만 접근 허용하는 권한 클래스 추가
+    @swagger_auto_schema(
+        operation_summary="게시글 단일 조회",
+        operation_description="특정 게시글의 상세 정보를 조회합니다.",
+        responses={200: PostSerializer, 404: "게시글을 찾을 수 없음"}
+    )
     def get(self, request, post_id): #read 단일 조회(post_id)
         post = get_object_or_404(Post, id=post_id)
         serializer = PostSerializer(post)
         return Response(serializer.data)
-    
+    @swagger_auto_schema(
+        operation_summary="게시글 수정",
+        operation_description="특정 게시글을 수정합니다.",
+        request_body=PostSerializer,
+        responses={200: PostSerializer, 400: "잘못된 요청", 404: "게시글을 찾을 수 없음"}
+    )
     def put(self, request, post_id): #update 전체 업데이트, patch는 일부분 업데이트
         post = get_object_or_404(Post, id=post_id)
         self.check_object_permissions(request, post) #권한 검사, IsOwnerOrReadOnly 클래스의 has_object_permission() 함수가 호출되어 권한 검사 수행
@@ -213,7 +241,11 @@ class PostDetail(APIView):
             serializer.save()
             return Response(serializer.data)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-    
+    @swagger_auto_schema(
+        operation_summary="게시글 삭제",
+        operation_description="특정 게시글을 삭제합니다.",
+        responses={200: "게시글이 성공적으로 삭제되었습니다.", 404: "게시글을 찾을 수 없음"}
+    )
     def delete(self, request, post_id):
         post = get_object_or_404(Post, id=post_id)
         self.check_object_permissions(request, post) #권한 검사, IsOwnerOrReadOnly 클래스의 has_object_permission() 함수가 호출되어 권한 검사 수행
@@ -226,14 +258,37 @@ class PostDetail(APIView):
             status=status.HTTP_200_OK
         )
 
+class CategoryPostList(APIView):
+    @swagger_auto_schema(
+        operation_summary="카테고리별 게시글 조회",
+        operation_description="특정 카테고리에 속한 게시글 목록을 조회합니다.",
+        responses={200: PostSerializer(many=True), 404: "카테고리를 찾을 수 없음"}
+    )
+    def get(self, request, category_id):
+        category = get_object_or_404(Category, id=category_id)
+        posts = Post.objects.filter(category=category).order_by('-created_at')
+        serializer = PostSerializer(posts, many=True)
+        return Response(serializer.data)
+
 class CommentList(APIView):
     permission_classes = [Isdaytime]
+    @swagger_auto_schema(
+        operation_summary="댓글 목록 조회",
+        operation_description="게시글에 달린 댓글 목록을 조회합니다.",
+        responses={200: CommentSerializer, 404: "게시글을 찾을 수 없음"}
+    )
     def get(self, request, post_id):
         post = get_object_or_404(Post, id=post_id)
         comments = Comment.objects.filter(post=post)
         serializer = CommentSerializer(comments, many=True)
         return Response(serializer.data)
 
+    @swagger_auto_schema(
+        operation_summary="댓글 작성",
+        operation_description="게시글에 댓글을 작성합니다.",
+        request_body=CommentSerializer,
+        responses={201: CommentSerializer, 400: "잘못된 요청", 404: "게시글을 찾을 수 없음"}
+    )
     def post(self, request, post_id):
         post = get_object_or_404(Post, id=post_id)
         serializer = CommentSerializer(data=request.data)
@@ -244,6 +299,11 @@ class CommentList(APIView):
     
 class CommentDetail(APIView): 
     permission_classes = [Isdaytime]
+    @swagger_auto_schema(
+        operation_summary="댓글 삭제",
+        operation_description="특정 댓글을 삭제합니다.",
+        responses={200: "댓글이 성공적으로 삭제되었습니다.", 404: "댓글을 찾을 수 없음/게시글을 찾을 수 없음"}
+    )
     def delete(self, request, post_id, comment_id):
         post = get_object_or_404(Post, id=post_id) 
         comment = get_object_or_404(Comment, id=comment_id)
@@ -266,3 +326,69 @@ class CommentDetail(APIView):
             },
             status=status.HTTP_200_OK
         )
+
+
+class ImageUploadView(APIView):
+    parser_classes = (MultiPartParser, FormParser)
+    @swagger_auto_schema(
+        operation_summary="이미지 업로드",
+        operation_description="이미지를 업로드하고 S3에 저장합니다.",
+        manual_parameters=[
+            openapi.Parameter('image', openapi.IN_FORM, type=openapi.TYPE_FILE, required=True, description="업로드할 이미지 파일")
+        ],
+        responses={201: ImageSerializer, 400: "이미지 파일이 없습니다.", 500: "S3 업로드 실패"}
+    )
+    def post(self, request):
+        if 'image' not in request.FILES:
+            return Response({"error": "No image file"}, status=status.HTTP_400_BAD_REQUEST)
+
+        image_file = request.FILES['image']
+
+        s3_client = boto3.client(
+            "s3",
+            aws_access_key_id=settings.AWS_ACCESS_KEY_ID,
+            aws_secret_access_key=settings.AWS_SECRET_ACCESS_KEY,
+            region_name=settings.AWS_REGION
+        )
+
+        # S3에 파일 저장 (중복해서 업로드하도록 UUID 추가)
+        # uuid: Universally Unique Identifier, 범용 고유 식별자
+        unique_filename = f"{uuid.uuid4()}_{image_file.name}"
+        file_path = f"uploads/{unique_filename}"
+        # S3에 파일 업로드
+        try:
+            s3_client.put_object(
+                Bucket=settings.AWS_STORAGE_BUCKET_NAME,
+                Key=file_path,
+                Body=image_file.read(),
+                ContentType=image_file.content_type,
+            )
+        except Exception as e:
+            return Response({"error": f"S3 Upload Failed: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+        # 업로드된 파일의 URL 생성
+        image_url = f"https://{settings.AWS_S3_CUSTOM_DOMAIN}/{file_path}"
+        
+        # DB에 저장
+        image_instance = Image.objects.create(image_url=image_url)
+        serializer = ImageSerializer(image_instance)
+
+
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+# #django-storages를 사용하여 S3에 이미지 업로드
+# class ImageUploadView(APIView):
+#     parser_classes = (MultiPartParser, FormParser)
+#     @swagger_auto_schema(
+#         operation_summary="django-storages 이미지 업로드",
+#         operation_description="이미지를 업로드하고 S3에 저장합니다.",
+#         manual_parameters=[
+#             openapi.Parameter('image', openapi.IN_FORM, type=openapi.TYPE_FILE, required=True, description="업로드할 이미지 파일")
+#         ],
+#         responses={201: ImageSerializer, 400: "이미지 파일이 없습니다."}
+#     )
+#     def post(self, request):
+#         image_instance = Image.objects.create(image=request.FILES['image'])
+#         # 끝. boto3, s3_client 코드 전혀 필요 없음
+#         serializer = ImageSerializer(image_instance)
+#         return Response(serializer.data, status=201)
