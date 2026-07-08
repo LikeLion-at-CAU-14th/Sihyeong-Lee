@@ -20,37 +20,39 @@ from django.core.files.storage import default_storage
 from .serializers import ImageSerializer
 from django.conf import settings
 import boto3, uuid
+
+from config.custom_exceptions import PostNotFoundException # 추가 - 커스텀 예외처리 실습용
 # Create your views here.
 
-def hello_world(request):
-    if request.method == "GET":
-        return JsonResponse({
-            'status' : 200,
-            'data' : "Hello likelion-14th!"
-        })
-    
-def index(request):
-    return render(request, 'index.html')
-
-# # 게시글 단일조회(GET), 수정(PATCH), 삭제(DELETE) 로직
-# @require_http_methods(["GET","PATCH","DELETE"])
-# def post_detail(request, post_id): #127.0.0.1:8000/post/(request method)/post_id/
-
-#     if request.method == "GET": #GET 요청일 때
-#         post = get_object_or_404(Post, pk=post_id) #Post 테이블에서 pk=입력한 post_id인 튜플
-#         post_detail_json = {
-#             "id" : post.id,
-#             "title" : post.title,
-#             "content" : post.content,
-#             "status" : post.status,
-#             "writer" : post.writer.username,
-#             "created_at" : post.created_at,
-#             "updated_at" : post.updated_at,
-#         }
+# def hello_world(request):
+#     if request.method == "GET":
 #         return JsonResponse({
-#             "status" : 200,
-#             'message' : '게시글 단일 조회 성공',
-#             "data": post_detail_json})
+#             'status' : 200,
+#             'data' : "Hello likelion-14th!"
+#         })
+    
+# def index(request):
+#     return render(request, 'index.html')
+
+# 게시글 단일조회(GET), 수정(PATCH), 삭제(DELETE) 로직
+@require_http_methods(["GET","PATCH","DELETE"])
+def post_detail(request, post_id): #127.0.0.1:8000/post/(request method)/post_id/
+
+    if request.method == "GET": #GET 요청일 때
+        try:
+            post = Post.objects.get(id=post_id)
+            post_detail_json = {
+                "id" : post.id,
+                "title" : post.title,
+                "content" : post.content,
+                "status" : post.status,
+                "user" : post.user.username
+            }
+            return JsonResponse({
+            "status" : 200,
+            "data": post_detail_json})
+        except Post.DoesNotExist:
+            raise PostNotFoundException
     
 #     if request.method == "PATCH":
 #         body = json.loads(request.body.decode('utf-8')) #HTTP 요청의 본문을 utf-8을 통해 문자열로 변환
@@ -201,10 +203,10 @@ class PostList(APIView):
     )
     def post(self, request, format=None): #create #drf에서 콘텐츠 협상을 위해 사용
         serializer = PostSerializer(data=request.data)
-        if serializer.is_valid(): #클라이언트가 보낸 데이터가 유효한지 검사
+        if serializer.is_valid(raise_exception=True): #클라이언트가 보낸 데이터가 유효한지 검사
             serializer.save(writer=request.user) #serializer.save() 메서드에 writer=request.user 전달하여 현재 인증된 사용자를 작성자로 지정
             return Response(serializer.data, status=status.HTTP_201_CREATED)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        #return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     
     @swagger_auto_schema(
         operation_summary="게시글 목록 조회",

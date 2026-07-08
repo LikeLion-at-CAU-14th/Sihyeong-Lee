@@ -2,7 +2,7 @@
 
 from rest_framework import serializers
 from .models import Post, Comment, Category # Post 모델과 Comment 모델을 가져옴
-
+from config.custom_api_exceptions import PostConflictException
 class PostSerializer(serializers.ModelSerializer):
     category = serializers.PrimaryKeyRelatedField(queryset=Category.objects.all(), many=True, required=False, allow_empty=True)
     #category 필드를 지정하지 않아도 post 생성 가능하도록 required=False, allow_empty=True 옵션 추가
@@ -11,6 +11,10 @@ class PostSerializer(serializers.ModelSerializer):
         fields = "__all__"  # 모델에서 어떤 필드를 가져올지 >> 전체 필드
         read_only_fields = ('writer',) 
         # post 생성 시 writer는 자동으로 현재 인증된 사용자로 설정되도록 read_only_fields에 'writer' 추가
+    def validate(self, data):
+        if Post.objects.filter(title=data['title']).exists():
+            raise PostConflictException(detail=f"A post with title: '{data['title']}' already exists.")
+        return data
 
 class CommentSerializer(serializers.ModelSerializer):
 

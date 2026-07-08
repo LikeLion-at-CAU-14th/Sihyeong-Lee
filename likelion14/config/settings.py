@@ -90,6 +90,7 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'config.middleware.RequestLoggingMiddleware',
     "allauth.account.middleware.AccountMiddleware",
+    "config.middleware.ExceptionHandlerMiddleware",  # 커스텀 예외 처리 미들웨어 추가
 ]
 
 ROOT_URLCONF = 'config.urls'
@@ -244,6 +245,7 @@ REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': ( # DRF의 기본 인증Authentication 방식을 JWT로 바꿉니다.
         'rest_framework_simplejwt.authentication.JWTAuthentication',
     ),
+    'EXCEPTION_HANDLER': 'config.custom_api_exception_handler.custom_api_exception_handler',
 }
 
 REST_USE_JWT = True
