@@ -2,6 +2,7 @@
 
 from rest_framework import serializers
 from .models import Post, Comment, Category # Post 모델과 Comment 모델을 가져옴
+from django.utils import timezone
 from config.custom_api_exceptions import PostConflictException, CommentLengthException, OnePostOneDayException
 class PostSerializer(serializers.ModelSerializer):
     category = serializers.PrimaryKeyRelatedField(queryset=Category.objects.all(), many=True, required=False, allow_empty=True)
@@ -15,6 +16,12 @@ class PostSerializer(serializers.ModelSerializer):
         if Post.objects.filter(title=data['title']).exists():
             raise PostConflictException(detail=f"A post with title: '{data['title']}' already exists.")
         
+        # 하루에 하나의 게시글만 작성 가능하도록 검사
+
+        today = timezone.now().date()
+        if Post.objects.filter(writer=self.context.get('request').user, created_at__date=today).exists():
+            raise OnePostOneDayException(detail="You can only create one post per day.")
+        return data
 
 class CommentSerializer(serializers.ModelSerializer):
 

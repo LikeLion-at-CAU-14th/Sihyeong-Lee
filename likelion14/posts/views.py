@@ -194,7 +194,7 @@ def post_detail(request, post_id): #127.0.0.1:8000/post/(request method)/post_id
 
 
 class PostList(APIView):
-    permission_classes = [Isdaytime] #7시부터 22시까지만 접근 허용하는 Isdaytime 권한 클래스 추가
+    #permission_classes = [Isdaytime] #7시부터 22시까지만 접근 허용하는 Isdaytime 권한 클래스 추가
     @swagger_auto_schema(
             operation_summary="게시글 생성",
             operation_description="새로운 게시글을 생성합니다.",
@@ -202,7 +202,7 @@ class PostList(APIView):
             responses={201: PostSerializer, 400: "잘못된 요청"},  # 응답 데이터의 스키마 정의
     )
     def post(self, request, format=None): #create #drf에서 콘텐츠 협상을 위해 사용
-        serializer = PostSerializer(data=request.data)
+        serializer = PostSerializer(data=request.data, context={'request': request}) #serializer에 request 객체 전달하여 validate() 함수에서 request.user를 사용할 수 있도록 함
         if serializer.is_valid(raise_exception=True): #클라이언트가 보낸 데이터가 유효한지 검사
             serializer.save(writer=request.user) #serializer.save() 메서드에 writer=request.user 전달하여 현재 인증된 사용자를 작성자로 지정
             return Response(serializer.data, status=status.HTTP_201_CREATED)
@@ -273,7 +273,7 @@ class CategoryPostList(APIView):
         return Response(serializer.data)
 
 class CommentList(APIView):
-    permission_classes = [Isdaytime]
+    #permission_classes = [Isdaytime]
     @swagger_auto_schema(
         operation_summary="댓글 목록 조회",
         operation_description="게시글에 달린 댓글 목록을 조회합니다.",

@@ -53,7 +53,7 @@ class RegisterView(APIView):
         
 # 로그인 담당 view
 class AuthView(APIView):
-    permission_classes = [Isdaytime]
+    #permission_classes = [Isdaytime]
     @swagger_auto_schema(
         operation_summary="로그인",
         operation_description="사용자 로그인을 진행하고, 성공 시 access token과 refresh token을 발급합니다.",
