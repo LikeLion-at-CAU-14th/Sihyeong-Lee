@@ -7,7 +7,7 @@ class BaseCustomAPIException(APIException):
 
     def __init__(self, detail=None, code=None):
         if detail is None:
-            detail = self.default_detail
+            detail = self.default_detail 
         
         if code is None:
             code = self.default_code

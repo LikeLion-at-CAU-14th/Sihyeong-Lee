@@ -63,7 +63,7 @@ def _extract_error_detail(error_data):
         
         if field_errors:
             return {
-                'message': f"{len(field_errors)} validation errors occurred",
+                'message': "; ".join(field_errors),
                 'code': 'validation_error',
                 'errors': field_errors,
                 'field_details': error_data
