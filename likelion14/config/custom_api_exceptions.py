@@ -27,3 +27,8 @@ class CommentLengthException(BaseCustomAPIException):
     status_code = 400
     default_detail = "Comment length should be longer than 15 characters."
     default_code = "COMMENT-LENGTH-INVALID"
+
+class OnePostOneDayException(BaseCustomAPIException):
+    status_code = 400
+    default_detail = "You can only create one post per day."
+    default_code = "ONE-POST-ONE-DAY"

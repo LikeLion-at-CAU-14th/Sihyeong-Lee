@@ -297,7 +297,7 @@ class CommentList(APIView):
         if serializer.is_valid(raise_exception=True):
             serializer.save(post=post, writer=request.user) #댓글 생성 시 해당 post_id의 게시글과 연결되도록 post=post 전달
             return Response(serializer.data, status=status.HTTP_201_CREATED)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        #return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     
 class CommentDetail(APIView): 
     permission_classes = [Isdaytime]
