@@ -43,6 +43,7 @@ class Comment(BaseModel): # BaseModel을 상속받음 -> 작성 시간, 수정 �
     id = models.AutoField(primary_key=True)
     content = models.TextField()
     post = models.ForeignKey(Post, on_delete=models.CASCADE, related_name='comments')
+    writer = models.ForeignKey(User, on_delete=models.CASCADE, related_name='comments')
 
     def __str__(self):
         return f"{self.post.title}의 댓글: {self.content}"

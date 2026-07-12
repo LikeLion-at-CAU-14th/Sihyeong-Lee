@@ -22,3 +22,8 @@ class ConflictException(BaseCustomAPIException):
 class PostConflictException(ConflictException):
     default_detail = "A conflict occurred with the post."
     default_code = "POST-CONFLICT"
+
+class CommentLengthException(BaseCustomAPIException):
+    status_code = 400
+    default_detail = "Comment length should be longer than 15 characters."
+    default_code = "COMMENT-LENGTH-INVALID"

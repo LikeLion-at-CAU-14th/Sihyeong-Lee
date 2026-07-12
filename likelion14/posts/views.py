@@ -294,7 +294,7 @@ class CommentList(APIView):
     def post(self, request, post_id):
         post = get_object_or_404(Post, id=post_id)
         serializer = CommentSerializer(data=request.data)
-        if serializer.is_valid():
+        if serializer.is_valid(raise_exception=True):
             serializer.save(post=post, writer=request.user) #댓글 생성 시 해당 post_id의 게시글과 연결되도록 post=post 전달
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)

@@ -63,7 +63,7 @@ def _extract_error_detail(error_data):
         
         if field_errors:
             return {
-                'message': "; ".join(field_errors),
+                'message': "; ".join(field_errors), #field_errors를 세미콜론으로 구분하여 하나의 문자열로 합침
                 'code': 'validation_error',
                 'errors': field_errors,
                 'field_details': error_data
